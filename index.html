@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Convite Hacker Insano</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    height: 100%;
+    background: black;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: #0f0;
+  }
+  #bios-failure {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: black;
+    color: #0f0;
+    font-size: 18px;
+    padding: 30px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    z-index: 9999999;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    animation: blink-cursor 1s step-start infinite;
+  }
+  @keyframes blink-cursor {
+    50% { border-right-color: transparent; }
+  }
+  #bios-failure span.cursor {
+    border-right: 2px solid #0f0;
+    padding-right: 3px;
+    margin-left: 2px;
+  }
+  #countdown {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    color: #0f0;
+    text-shadow: 0 0 10px #0f0;
+    z-index: 10001;
+    user-select: none;
+  }
+  canvas#matrix {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+  #warnings-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
+  }
+  .warning-window {
+    position: absolute;
+    background: rgba(255,0,0,0.85);
+    border: 2px solid #ff0000;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 25px red;
+    opacity: 0;
+    animation: fadeIn 1s forwards, glitch 0.3s infinite alternate;
+    white-space: pre-wrap;
+    max-width: 250px;
+    text-shadow: 0 0 5px #ff0000;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+  @keyframes glitch {
+    0% { transform: translate(0,0) scale(1); }
+    20% { transform: translate(2px,-2px) scale(1.02); }
+    40% { transform: translate(-2px,2px) scale(0.98); }
+    60% { transform: translate(2px,2px) scale(1.03); }
+    80% { transform: translate(-2px,-2px) scale(1); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+  .terminal-window {
+    position: relative;
+    z-index: 10002;
+    max-width: 700px;
+    width: 100%;
+    background: rgba(0,0,0,0.9);
+    border-radius: 10px;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 30px #00ff88;
+    overflow: hidden;
+    padding-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+  }
+  .terminal-titlebar {
+    background: #111;
+    padding: 5px 10px;
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+  }
+  .dots {
+    display: flex;
+    gap: 6px;
+    margin-right: 10px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .red { background: #ff605c; }
+  .yellow { background: #ffbd44; }
+  .green { background: #00ca56; }
+  .terminal-body {
+    color: #33ff33;
+    font-size: 1em;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    min-height: 300px;
+    padding: 20px;
+    flex-grow: 1;
+    overflow-y: auto;
+    user-select: text;
+  }
+  #input-line {
+    color: #0f0;
+    outline: none;
+    border: none;
+    background: transparent;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    width: 100%;
+    caret-color: #0f0;
+    display: none;
+  }
+  a#confirmar {
+    background: #0f0;
+    color: #000;
+    font-weight: bold;
+    padding: 12px 30px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin: 20px auto 0 auto;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    user-select: none;
+    max-width: 300px;
+    text-align: center;
+    z-index: 10003;
+    position: relative;
+    display: none; /* inicialmente escondido */
+  }
+  a#confirmar:hover {
+    background: #1f1;
+  }
+  #help-box {
+    position: absolute;
+    right: -320px;
+    top: 50px;
+    width: 280px;
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #0f0;
+    border-radius: 10px;
+    padding: 15px;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    box-shadow: 0 0 15px #0f0;
+    user-select: none;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10004;
+  }
+  #help-box.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .glitch-effect {
+    animation: screen-glitch 0.4s infinite;
+  }
+  @keyframes screen-glitch {
+    0% {
+      clip-path: inset(0 0 0 0);
+      transform: translate(0);
+    }
+    20% {
+      clip-path: inset(10% 0 85% 0);
+      transform: translate(-2px, 2px);
+    }
+    40% {
+      clip-path: inset(85% 0 10% 0);
+      transform: translate(2px, -2px);
+    }
+    60% {
+      clip-path: inset(10% 0 85% 0);
+      transform: translate(-2px, -2px);
+    }
+    80% {
+      clip-path: inset(85% 0 10% 0);
+      transform: translate(2px, 2px);
+    }
+    100% {
+      clip-path: inset(0 0 0 0);
+      transform: translate(0);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="bios-failure">
+Booting system...
+Initializing hardware...
+Checking memory... OK
+Detecting drives... OK
+Loading bootloader...
+Error: Boot failure detected.
+Please contact system administrator.
+System halted.<span class="cursor"></span>
+</div>
+
+<div id="countdown">00:03:00</div>
+
+<canvas id="matrix"></canvas>
+
+<div id="warnings-container"></div>
+
+<div class="terminal-window" style="display:none;" id="terminal-wrapper">
+  <div class="terminal-titlebar">
+    <div class="dots">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    murilo@localhost: ~
+  </div>
+  <div class="terminal-body" id="terminal"></div>
+  <input id="input-line" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+  <div id="help-box">Digite <b>"s"</b> para sim, <b>"n"</b> para não e pressione Enter</div>
+</div>
+
+<a id="confirmar" target="_blank" rel="noopener noreferrer">Confirmar Presença</a>
+
+<audio id="alert-sound" preload="auto">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/23/audio_14a8dfe0bb.mp3?filename=cyberpunk-synthwave-909.mp3" type="audio/mpeg">
+  Seu navegador não suporta áudio.
+</audio>
+
+<script>
+  const countdownEl = document.getElementById('countdown');
+  let countdownTime = 180;
+
+  function updateCountdown() {
+    if(countdownTime <= 0) {
+      countdownEl.textContent = "00:00:00";
+      clearInterval(countdownInterval);
+      return;
+    }
+    countdownTime--;
+    let min = String(Math.floor(countdownTime / 60)).padStart(2, '0');
+    let sec = String(countdownTime % 60).padStart(2, '0');
+    countdownEl.textContent = `00:${min}:${sec}`;
+  }
+  let countdownInterval = setInterval(updateCountdown, 1000);
+
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  const katakana = 'アカサタナハマヤラワンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@';
+  const letters = katakana.split('');
+  const fontSize = 16;
+  const columns = Math.floor(canvas.width / fontSize);
+  const drops = new Array(columns).fill(1);
+
+  function drawMatrix() {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0F0';
+    ctx.font = `${fontSize}px monospace`;
+    for(let i = 0; i < drops.length; i++) {
+      const text = letters[Math.floor(Math.random() * letters.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+  let matrixInterval = setInterval(drawMatrix, 33);
+
+  const alertSound = document.getElementById('alert-sound');
+  alertSound.volume = 0.15;
+
+  const biosFailure = document.getElementById('bios-failure');
+  const terminalWrapper = document.getElementById('terminal-wrapper');
+  const terminal = document.getElementById('terminal');
+  const inputLine = document.getElementById('input-line');
+  const confirmarBtn = document.getElementById('confirmar');
+  const warningsContainer = document.getElementById('warnings-container');
+  const helpBox = document.getElementById('help-box');
+
+  const warnings = [
+    "⚠️ WARNING: Acesso não autorizado!",
+    "🚨 BRECHA DETECTADA!",
+    "⚠️ INVASÃO EM ANDAMENTO",
+    "⚠️ CÓDIGO MALICIOSO EXECUTADO",
+    "⚠️ FIREWALL IGNORADO",
+    "⛔ SISTEMA COMPROMETIDO",
+    "🛑 ALERTA DE SEGURANÇA"
+  ];
+
+  function spawnWarning() {
+    const warning = document.createElement('div');
+    warning.classList.add('warning-window');
+    warning.innerText = warnings[Math.floor(Math.random() * warnings.length)];
+    warning.style.top = Math.random() * (window.innerHeight - 100) + 'px';
+    warning.style.left = Math.random() * (window.innerWidth - 250) + 'px';
+    warningsContainer.appendChild(warning);
+    setTimeout(() => warning.remove(), 7000);
+  }
+  let warningInterval;
+
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  function playKeySound() {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.05);
+  }
+
+  // Mensagens genéricas, sem nome fixo
+  const linhas = [
+    `murilo@localhost:~$ sudo hack --target convidado`,
+    `[+] SISTEMA SENDO HACKEADO...`,
+    `[+] Acesso obtido com sucesso.`,
+    `murilo@localhost:~$ cat convite.txt`,
+    `>> CONVITE HACKER PARA CONVIDADOS DO MEU ANIVERSÁRIO <<`,
+    `Olá Convidado,`,
+    `🗓️ Data: 02/08/2025`,
+    `⏰ Hora: 17:00`,
+    `📍 Local: Avenida Nelson Palma Travassos 233 - SP`,
+    `🎯 Missão: Celebrar meu aniversário em modo ultra hacker!`,
+    `💻 Venha comemorar meu anivesário`,
+    `murilo@localhost:~$ echo 'Confirma presença? (s/n)'`
+  ];
+
+  function mostrarHelpBox() {
+    helpBox.classList.add('visible');
+  }
+  function esconderHelpBox() {
+    helpBox.classList.remove('visible');
+  }
+
+  let linhaAtual = 0;
+  let charAtual = 0;
+
+  function digitarLinha() {
+    if (linhaAtual >= linhas.length) {
+      inputLine.style.display = 'inline-block';
+      confirmarBtn.style.display = 'block'; // Botão aparece junto com input
+      inputLine.focus();
+      mostrarHelpBox();
+      return;
+    }
+    const linha = linhas[linhaAtual];
+    if (charAtual < linha.length) {
+      terminal.innerHTML += linha.charAt(charAtual);
+      playKeySound();
+      charAtual++;
+      setTimeout(digitarLinha, 40);
+    } else {
+      terminal.innerHTML += '\n';
+      linhaAtual++;
+      charAtual = 0;
+      setTimeout(digitarLinha, 600);
+    }
+  }
+
+  function processarResposta(resposta) {
+    resposta = resposta.toLowerCase().trim();
+    if (resposta === 's') {
+      terminal.innerHTML += '\nConfirmação recebida: SIM\n';
+      inputLine.style.display = 'none';
+      esconderHelpBox();
+      // Botão permanece visível
+      atualizarLinkWhatsApp();
+    } else if (resposta === 'n') {
+      terminal.innerHTML += '\nConfirmação recebida: NÃO\n';
+      inputLine.style.display = 'none';
+      esconderHelpBox();
+      confirmarBtn.style.display = 'none'; // botão some
+    } else {
+      terminal.innerHTML += '\nResposta inválida. Digite "s" para sim ou "n" para não.\n';
+    }
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  inputLine.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const valor = inputLine.value;
+      if (valor.trim() !== '') {
+        processarResposta(valor);
+        inputLine.value = '';
+      }
+    } else {
+      playKeySound();
+    }
+  });
+
+  const numeroConvidado = "5511952746523";
+  function atualizarLinkWhatsApp() {
+    const msg = encodeURIComponent(`Confirmo presença na missão hacker - Aniversário do Murilo! 😎💻`);
+    confirmarBtn.href = `https://wa.me/${numeroConvidado}?text=${msg}`;
+  }
+
+  function iniciarTerminal() {
+    biosFailure.style.display = 'none';
+    terminalWrapper.style.display = 'flex';
+    terminalWrapper.style.flexDirection = 'column';
+    digitarLinha();
+    warningInterval = setInterval(spawnWarning, 1200);
+    atualizarLinkWhatsApp();
+  }
+
+  function glitchScreen() {
+    if (Math.random() < 0.1) {
+      document.body.classList.add('glitch-effect');
+      setTimeout(() => document.body.classList.remove('glitch-effect'), 300);
+    }
+  }
+  setInterval(glitchScreen, 3000);
+
+  confirmarBtn.addEventListener('click', () => {
+    alertSound.play().catch(() => { });
+  });
+
+  setTimeout(iniciarTerminal, 6000);
+</script>
+
+</body>
+</html>
